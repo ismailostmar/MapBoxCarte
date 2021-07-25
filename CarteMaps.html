@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MAPS CARTE</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #mapid {
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="mapid"></div>
+    <script>
+        // IMPORTANT :
+        // Pour utiliser les cartes MapBox, il faut s'inscrire sur
+        // le site web https://www.mapbox.com afin d'obtenir un token.
+        const mapboxToken =
+            "pk.eyJ1IjoiaXNtYWlsdG0iLCJhIjoiY2tyamZjYXZqM2NqOTJwcDhkZ2RuM255cyJ9.PjcNoefUIwqeeSO5zBezvw";
+
+        const zones = [{
+                distance: 10,
+                color: "#00b798"
+            },
+            {
+                distance: 30,
+                color: "#ffb846"
+            },
+        ];
+        let zoneIndex = 0;
+        let mymap;
+        let marker;
+        let circle;
+
+        function addMarker(latlng) {
+            marker = L.marker(latlng, {
+                draggable: true
+            }).addTo(mymap);
+            marker.on("dragstart", removeCircle);
+            marker.on("dragend", addCircle);
+        }
+
+        function removeMarker() {
+            marker.remove();
+            marker = null;
+        }
+
+        function addCircle() {
+            circle = L.circle(marker.getLatLng(), {
+                color: zones[zoneIndex].color,
+                fillColor: zones[zoneIndex].color,
+                fillOpacity: 0.15,
+                radius: zones[zoneIndex].distance * 1000,
+            }).addTo(mymap);
+        }
+
+        function removeCircle() {
+            circle.remove();
+            circle = null;
+        }
+
+        function initMap() {
+            mymap = L.map("mapid").setView([46.48361, 2.52639], 10);
+            L.tileLayer(
+                "https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+                    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+                    maxZoom: 18,
+                    id: "mapbox/streets-v11",
+                    tileSize: 512,
+                    zoomOffset: -1,
+                    accessToken: mapboxToken,
+                }
+            ).addTo(mymap);
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const latlng = [
+                        position.coords.latitude,
+                        position.coords.longitude,
+                    ];
+                    mymap.panTo(latlng);
+                    addMarker(latlng);
+                    addCircle();
+                });
+            }
+
+            mymap.on("click", (e) => {
+                if (!marker) {
+                    addMarker(e.latlng);
+                    addCircle();
+                } else {
+                    removeCircle();
+                    marker.setLatLng(e.latlng);
+                    addCircle();
+                }
+            });
+
+            document.addEventListener("keydown", (e) => {
+                if (!marker) {
+                    return;
+                }
+                switch (e.key) {
+                    case " ":
+                        removeCircle();
+                        zoneIndex ^= 1;
+                        addCircle();
+                        break;
+                    case "Escape":
+                        removeCircle();
+                        removeMarker();
+                        break;
+                }
+            });
+        }
+
+        initMap();
+    </script>
+</body>
+
+</html>
